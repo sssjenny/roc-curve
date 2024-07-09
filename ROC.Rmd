@@ -1,0 +1,63 @@
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+###1
+###a
+Calculate the logit model using the lecture notes' full dataset, and then visualize an ROC curve to classify spam versus non-spam. Based on this logistic regression, we can infer that the model's AUC is 0.933, suggesting a high level of accuracy.
+
+```{r}
+library(caret)
+library(pROC)
+
+email <- read.csv("~/Desktop/spam.csv") 
+dim(email)
+head(email)
+model1 <- glm(spam ~ ., data=email, family='binomial')
+summary(model1)
+
+predict1<-predict(model1, newdata=email, type="response")
+
+predict1<-ifelse(predict1>0.5,1,0)
+
+roc1 <- roc(email$spam,as.numeric(predict1)  )
+plot(roc1, print.auc=TRUE, auc.polygon=TRUE, 
+     grid=c(0.2, 0.2),grid.col=c("red", "yellow"), 
+     max.auc.polygon=TRUE,auc.polygon.col="green",
+     print.thres=TRUE,main='roc curve from logit model')
+
+```
+
+
+
+###b
+Generate an ROC curve using a logit specification estimated on 80% of the data (randomly sampled), and assess classification error on the remaining 20%. Typically, we gauge model performance using the AUC value, where a value closer to 1.0 indicates better detection accuracy. Here, the model's AUC is 0.925, diverging significantly from the logit specification presented in lecture notes on the full dataset. Moreover, when evaluating classification error on the remaining 20% of the data, the model achieves an Accuracy of 0.9316, with a Sensitivity of 0.9537 and a Specificity of 0.8972. This indicates strong performance on the test set, with model accuracy exceeding 90%.
+
+
+```{r}
+set.seed(202311)
+sample_number = sample(1:nrow(email), 0.8*nrow(email))
+email_train = email[sample_number,]
+email_test = email[-sample_number,]
+
+
+model2<- glm(spam ~ ., data=email_train, family='binomial')
+predict2<-predict(model2, newdata=email_test, type="response")
+predict2<-ifelse(predict2>0.5,1,0)
+
+
+roc2 <- roc(email_test$spam,as.numeric(predict2)  )
+plot(roc2, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("red", "yellow"), max.auc.polygon=TRUE,auc.polygon.col="green", print.thres=TRUE,main='out-of-sample ROC curve')
+
+
+
+confusionMatrix(factor(predict2), factor(email_test$spam))
+
+
+```
+
+
+
